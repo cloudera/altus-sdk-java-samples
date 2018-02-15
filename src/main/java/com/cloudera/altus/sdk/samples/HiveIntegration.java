@@ -24,7 +24,6 @@ import com.cloudera.altus.dataeng.api.DataengClient;
 import com.cloudera.altus.dataeng.model.ClusterStatus;
 import com.cloudera.altus.dataeng.model.HiveJobRequest;
 import com.cloudera.altus.dataeng.model.JobRequest;
-import com.cloudera.altus.dataeng.model.JobStatus;
 import com.cloudera.altus.dataeng.model.SubmitJobsRequest;
 import com.cloudera.altus.dataeng.model.SubmitJobsResponse;
 
@@ -46,7 +45,6 @@ public class HiveIntegration extends BaseIntegration {
 
 		try {
       ClusterStatus clusterCreationStatus = builder.createAWSCluster(client, clusterName, "HIVE_ON_SPARK");
-
 
 			/*
 			Valid values for Cluster status can be found at in the Altus documentation:
@@ -72,7 +70,7 @@ public class HiveIntegration extends BaseIntegration {
 		SubmitJobsRequest submitJobsRequest = new SubmitJobsRequest();
 		submitJobsRequest.setClusterName(clusterName);
 		ArrayList<JobRequest> jobs = new ArrayList<>();
-		JobRequest job = new JobRequest();
+		JobRequest jobRequest = new JobRequest();
 		HiveJobRequest hiveJob = new HiveJobRequest();
 		/* The Hive script to execute. It is used to create tables. */
 		hiveJob.setScript("s3a://cloudera-altus-data-engineering-samples/hive/program/med-part1.hql");
@@ -84,14 +82,11 @@ public class HiveIntegration extends BaseIntegration {
 		params.add("GDP_PATH=s3a://cloudera-altus-data-engineering-samples/hive/data/GDP/");
 
 		hiveJob.setParams(params);
-		job.setName("sample-hive-job");
-		job.setHiveJob(hiveJob);
-		jobs.add(job);
+		jobRequest.setName("sample-hive-job-status");
+		jobRequest.setHiveJob(hiveJob);
+		jobs.add(jobRequest);
 		submitJobsRequest.setJobs(jobs);
 		SubmitJobsResponse response = client.submitJobs(submitJobsRequest);
-    if (JobStatus.FAILED.equals(response)
-				|| JobStatus.TERMINATING.equals(response)) {
-      LOG.error("Unable to create Job request ");
-    }
+		pollJobStatus(client, response.getJobs().get(0).getJobId());
 	}
 }

@@ -23,7 +23,6 @@ import com.cloudera.altus.AltusServiceException;
 import com.cloudera.altus.dataeng.api.DataengClient;
 import com.cloudera.altus.dataeng.model.ClusterStatus;
 import com.cloudera.altus.dataeng.model.JobRequest;
-import com.cloudera.altus.dataeng.model.JobStatus;
 import com.cloudera.altus.dataeng.model.MR2JobRequest;
 import com.cloudera.altus.dataeng.model.SubmitJobsRequest;
 import com.cloudera.altus.dataeng.model.SubmitJobsResponse;
@@ -50,9 +49,8 @@ public class MapreduceIntegration extends BaseIntegration {
 
 			if (ClusterStatus.CREATED.equals(clusterCreationStatus)) {
 				builder.createJob(client, clusterName);
-				LOG.info("Successfully created cluster and submitted Mapreduce job to it");
 			} else {
-				LOG.error("Cluster is not created as expected");
+				LOG.error("Error creating cluster");
 			}
 		} catch (AltusServiceException ase) {
 			LOG.error(
@@ -87,11 +85,7 @@ public class MapreduceIntegration extends BaseIntegration {
 			jobs.add(job);
 			submitJobsRequest.setJobs(jobs);
 			SubmitJobsResponse response = client.submitJobs(submitJobsRequest);
-
-      if (JobStatus.FAILED.equals(response)
-          || JobStatus.TERMINATING.equals(response)) {
-        LOG.error("Unable to create Job request ");
-      }
+			pollJobStatus(client, response.getJobs().get(0).getJobId());
 		} catch (IOException ioe) {
 			LOG.error("Unable to read SampleResources.ini file " + ioe.getMessage());
 			throw new RuntimeException(

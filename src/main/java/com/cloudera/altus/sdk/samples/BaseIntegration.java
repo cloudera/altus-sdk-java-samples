@@ -31,10 +31,11 @@ import com.cloudera.altus.dataeng.model.CreateAWSClusterResponse;
 import com.cloudera.altus.dataeng.model.DeleteClusterRequest;
 import com.cloudera.altus.dataeng.model.DeleteClusterResponse;
 import com.cloudera.altus.dataeng.model.DescribeClusterRequest;
-import com.cloudera.altus.dataeng.model.DescribeClusterResponse;
+import com.cloudera.altus.dataeng.model.DescribeJobRequest;
+import com.cloudera.altus.dataeng.model.JobStatus;
 
-import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.Duration;
@@ -52,8 +53,12 @@ abstract class BaseIntegration {
 
 	public Wini getIniFile() throws IOException {
 		if (ini == null) {
-			File file = new File(getClass().getClassLoader().getResource("SampleResources.ini").getFile());
-			ini = new Wini(file);
+		  InputStream in = getClass().getClassLoader().getResourceAsStream("SampleResources.ini");
+		  if (in == null) {
+		    LOG.error("Unable to read SampleResources.ini file");
+		    throw new RuntimeException("Unable to load SampleResources.ini file ");
+      }
+      ini = new Wini(in);
 		}
 		return ini;
 	}
@@ -111,10 +116,11 @@ abstract class BaseIntegration {
 			 /* Specify the CDH version to use such for CDH5.13, put CDH513 there */
 			request.setCdhVersion(ini.get("AWSCluster", "cdhVersion"));
 
-			String privateKeyFileLocation = ini.get("credentials", "ssh_private_key_location");
-			String sshPrivateKey = getSshPrivateKeyContents(privateKeyFileLocation);
+			String publicKey = ini.get("credentials", "ssh_public_key_location");
+			String sshKey = getSshKeyContents(publicKey);
 
-			request.setSshPrivateKey(sshPrivateKey);
+			request.setPublicKey(sshKey);
+
 			request.setServiceType(clusterType);
 			 /* Specify the AWS instance type such as m4.xlarge */
 			request.setInstanceType(ini.get("AWSCluster", "instanceType"));
@@ -148,30 +154,23 @@ abstract class BaseIntegration {
 	 * @param clusterName		Cluster to poll
 	 * @return ClusterStatus	Final status of the cluster
 	 */
-	ClusterStatus pollClusterStatus(DataengClient client,
-																	String clusterName) {
+	ClusterStatus pollClusterStatus(DataengClient client, String clusterName) {
 
 	  /* Poll the cluster to determine if cluster was created successfully */
 		DescribeClusterRequest describeClusterRequest = new DescribeClusterRequest();
 		describeClusterRequest.setClusterName(clusterName);
-		DescribeClusterResponse describeClusterResponse = client.describeCluster(describeClusterRequest);
-		ClusterStatus clusterStatus = describeClusterResponse.getCluster().getStatus();
-		if (ClusterStatus.FAILED.equals(clusterStatus)
-				|| ClusterStatus.TERMINATING.equals(clusterStatus)) {
-			LOG.error("Unable to create AWS cluster ");
-			return clusterStatus;
-		}
+		ClusterStatus clusterStatus;
 
-		boolean pollCluster = true;
-		while (pollCluster) {
+		while (true) {
 			clusterStatus = client.describeCluster(describeClusterRequest).getCluster().getStatus();
 			if (ClusterStatus.CREATED.equals(clusterStatus)) {
-				LOG.info("Successfully created AWS cluster ");
-				pollCluster = false;
+				LOG.info("Successfully created AWS cluster " + clusterName);
+				return clusterStatus;
 			} else if (ClusterStatus.FAILED.equals(clusterStatus)
 					|| ClusterStatus.TERMINATING.equals(clusterStatus)) {
-				LOG.error("Unable to create AWS cluster ");
-				pollCluster = false;
+				LOG.error("AWS cluster " + clusterName + " was unable to get created. "
+											+ " Cluster status is " + clusterStatus);
+				return clusterStatus;
 			} else {
 				try {
 					Thread.sleep(Duration.ofMinutes(1).toMillis());
@@ -180,7 +179,6 @@ abstract class BaseIntegration {
 				}
 			}
 		}
-		return clusterStatus;
 	}
 
 	/**
@@ -208,14 +206,46 @@ abstract class BaseIntegration {
 	abstract void createJob(DataengClient client, String clusterName);
 
 	/**
-	 * Reads in the private key specified in the file. More information can be found
+	 * Poll the job to see if it was created successfully
+	 * @param client		DataengClient used for polling the job status
+	 * @param jobId		Job Id to poll
+	 * @return JobStatus	Final status of the job
+	 */
+	JobStatus pollJobStatus(DataengClient client, String jobId) {
+
+	  /* Poll the job to determine if cluster was created successfully */
+		DescribeJobRequest jobRequest = new DescribeJobRequest();
+		jobRequest.setJobId(jobId);
+		JobStatus currentJobStatus;
+
+		while (true) {
+			currentJobStatus = client.describeJob(jobRequest).getJob().getStatus();
+			if (JobStatus.COMPLETED.equals(currentJobStatus)) {
+				LOG.info("Successfully completed job ");
+				return currentJobStatus;
+			} else if (JobStatus.FAILED.equals(currentJobStatus)
+					|| JobStatus.TERMINATING.equals(currentJobStatus)) {
+				LOG.error("Job " + jobId + currentJobStatus.toString());
+				return currentJobStatus;
+			} else {
+				try {
+					Thread.sleep(Duration.ofSeconds(30).toMillis());
+				} catch (InterruptedException e) {
+					throw new RuntimeException(e);
+				}
+			}
+		}
+	}
+
+	/**
+	 * Reads in the key specified in the file. More information can be found
 	 * in the "Creating and Working with Clusters on the Console"
 	 # section of the Altus documentation.
 	 * @param file						file containing the private key
 	 * @return String					private key
 	 * @throws IOException		Occurs when their is an issue reading in the file.
 	 */
-	String getSshPrivateKeyContents(String file) throws IOException{
+	String getSshKeyContents(String file) throws IOException{
 		return new String(Files.readAllBytes(Paths.get(file)));
 	}
 }

@@ -25,11 +25,16 @@ import com.cloudera.altus.dataeng.model.ClusterStatus;
 import com.cloudera.altus.dataeng.model.CreateAWSClusterRequest;
 import com.cloudera.altus.dataeng.model.CreateAWSClusterRequest.AutomaticTerminationConditionEnum;
 import com.cloudera.altus.dataeng.model.CreateAWSClusterResponse;
+import com.cloudera.altus.dataeng.model.JobOrder;
 import com.cloudera.altus.dataeng.model.JobRequest;
+import com.cloudera.altus.dataeng.model.JobSummary;
+import com.cloudera.altus.dataeng.model.ListJobsRequest;
+import com.cloudera.altus.dataeng.model.ListJobsResponse;
 import com.cloudera.altus.dataeng.model.SparkJobRequest;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 
 import org.ini4j.Wini;
 import org.slf4j.Logger;
@@ -51,7 +56,6 @@ public class SparkAllInOneIntegration extends BaseIntegration {
 		try {
 			DataengClient client = builder.createClient();
 			builder.createJob(client, clusterName);
-      LOG.info("Successfully created cluster and Spark job all in one step");
 		} catch (AltusServiceException ase) {
 			LOG.error("Error occurred with trying to create and submit Spark job " + ase.getMessage());
 		}
@@ -67,10 +71,10 @@ public class SparkAllInOneIntegration extends BaseIntegration {
 			Wini ini = getIniFile();
 			request.setCdhVersion(ini.get("AWSCluster", "cdhVersion"));
 
-      String privateKeyFileLocation = ini.get("credentials", "ssh_private_key_location");
-      String sshPrivatekey = getSshPrivateKeyContents(privateKeyFileLocation);
+      String publicKey = ini.get("credentials", "ssh_public_key_location");
+      String sshKey = getSshKeyContents(publicKey);
 
-			request.setSshPrivateKey(sshPrivatekey);
+			request.setPublicKey(sshKey);
 			request.setServiceType("SPARK");
 			request.setInstanceType(ini.get("AWSCluster", "instanceType"));
 			request.setWorkersGroupSize(ini.get("AWSCluster", "workerSize", int.class));
@@ -79,6 +83,7 @@ public class SparkAllInOneIntegration extends BaseIntegration {
 			request.setClouderaManagerPassword(ini.get("AWSCluster", "CMPassword"));
 
 			/* Add Job specific information. */
+			String jobName = "sample-SparkAllInOne-Job";
 			ArrayList<JobRequest> jobs = new ArrayList<>();
 			JobRequest job = new JobRequest();
 			SparkJobRequest sparkJob = new SparkJobRequest();
@@ -92,7 +97,7 @@ public class SparkAllInOneIntegration extends BaseIntegration {
 
 			args.add(ini.get("jobs", "outputLocation"));
 			sparkJob.setApplicationArguments(args);
-			job.setName("sample-SparkAllInOne-Job");
+			job.setName(jobName);
 			job.setSparkJob(sparkJob);
 			jobs.add(job);
 
@@ -104,11 +109,16 @@ public class SparkAllInOneIntegration extends BaseIntegration {
 			request.setAutomaticTerminationCondition(AutomaticTerminationConditionEnum.EMPTY_JOB_QUEUE);
 			CreateAWSClusterResponse response = client.createAWSCluster(request);
 
-			if (ClusterStatus.FAILED.equals(response.getCluster().getStatus())
-          || ClusterStatus.TERMINATING.equals(response.getCluster().getStatus())) {
-			  LOG.error("Unable to create AWS cluster ");
-      }
-      LOG.info("Successfully creating cluster: " + response.getCluster().getClusterName()) ;
+			ClusterStatus finalClusterStatus = pollClusterStatus(client, clusterName);
+			if (ClusterStatus.CREATED.equals(finalClusterStatus)) {
+				LOG.info("Successfully creating cluster: " + clusterName);
+				String jobId = findJobId(client, jobName);
+				if (jobId != null) {
+				  pollJobStatus(client, jobId);
+				}
+			} else {
+				LOG.error("Unable to create " + clusterName + " Status of cluster is " + finalClusterStatus.toString());
+			}
 		} catch (IOException ioe) {
 			LOG.error("Unable to load SampleResources.ini file " + ioe.getMessage());
 			throw new RuntimeException("Unable to load SampleResources.ini file "
@@ -120,5 +130,22 @@ public class SparkAllInOneIntegration extends BaseIntegration {
 							+ ase.getMessage());
 			throw ase;
 		}
+	}
+
+	private String findJobId(DataengClient client, String jobName) {
+		ListJobsRequest listJobsRequest = new ListJobsRequest();
+		listJobsRequest.setOrder(JobOrder.NEWEST_TO_OLDEST);
+
+		List<JobSummary> jobSummaries = new ArrayList<>();
+		ListJobsResponse listJobsResponse = client.listJobs(listJobsRequest);
+		jobSummaries.addAll(listJobsResponse.getJobs());
+
+		for (JobSummary job : jobSummaries) {
+		  if (jobName.equalsIgnoreCase(job.getJobName())) {
+		    return job.getJobId();
+		  }
+		}
+		LOG.info("Unable to locate job " + jobName);
+		return null;
 	}
 }

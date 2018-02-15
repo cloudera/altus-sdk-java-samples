@@ -23,7 +23,6 @@ import com.cloudera.altus.AltusServiceException;
 import com.cloudera.altus.dataeng.api.DataengClient;
 import com.cloudera.altus.dataeng.model.ClusterStatus;
 import com.cloudera.altus.dataeng.model.JobRequest;
-import com.cloudera.altus.dataeng.model.JobStatus;
 import com.cloudera.altus.dataeng.model.SparkJobRequest;
 import com.cloudera.altus.dataeng.model.SubmitJobsRequest;
 import com.cloudera.altus.dataeng.model.SubmitJobsResponse;
@@ -90,10 +89,7 @@ public class SparkIntegration extends BaseIntegration {
 			jobs.add(job);
 			submitSparkJobsRequest.setJobs(jobs);
 			SubmitJobsResponse response = client.submitJobs(submitSparkJobsRequest);
-			if (JobStatus.FAILED.equals(response)
-          || JobStatus.TERMINATING.equals(response)) {
-			  LOG.error("Unable to create Job request ");
-			}
+			pollJobStatus(client, response.getJobs().get(0).getJobId());
 		} catch (IOException ioe) {
 			LOG.error("Unable to load SampleResources.ini file " + ioe.getMessage());
 			throw new RuntimeException("Unable to load SampleResources.ini file "

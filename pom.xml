@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.cloudera.altus</groupId>
   <artifactId>altus-sdk-java-samplecode</artifactId>
-  <version>0.9.1</version>
+  <version>0.9.2</version>
   <name>altus-sdk-java-samplecode</name>
   <description>Sample examples to get started on Altus SDK (Java) development.</description>
   <properties>
@@ -11,6 +11,8 @@
     <maven-compiler-plugin.version>3.7.0</maven-compiler-plugin.version>
     <slf4j-api.version>1.7.25</slf4j-api.version>
     <ini4j.version>0.5.4</ini4j.version>
+    <maven-jar-plugin.version>3.0.2</maven-jar-plugin.version>
+    <maven-dependency-plugin.version>3.0.2</maven-dependency-plugin.version>
   </properties>
   <repositories>
     <repository>
@@ -58,6 +60,40 @@
               <target>${minSupportedJvmJavaVersion}</target>
           </configuration>
          </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <version>${maven-dependency-plugin.version}</version>
+        <executions>
+          <execution>
+            <id>copy-dependencies</id>
+            <phase>prepare-package</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <configuration>
+              <outputDirectory>${project.build.directory}/lib</outputDirectory>
+              <overWriteReleases>false</overWriteReleases>
+              <overWriteSnapshots>false</overWriteSnapshots>
+              <overWriteIfNewer>true</overWriteIfNewer>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <version>${maven-jar-plugin.version}</version>
+        <configuration>
+          <archive>
+            <manifest>
+              <addClasspath>true</addClasspath>
+              <classpathPrefix>lib/</classpathPrefix>
+              <mainClass>com.cloudera.altus.sdk.samples.SparkAllInOneIntegration</mainClass>
+            </manifest>
+          </archive>
+        </configuration>
+      </plugin>
     </plugins>
   </build>
 </project>
