@@ -1,31 +1,24 @@
 /*
+ * Copyright (c) 2018 Cloudera, Inc. All Rights Reserved.
  *
- *  *
- *  *  * Copyright (c) 2017 Cloudera, Inc. All Rights Reserved.
- *  *  *
- *  *  * Licensed under the Apache License, Version 2.0 (the "License");
- *  *  * you may not use this file except in compliance with the License.
- *  *  * You may obtain a copy of the License at
- *  *  *
- *  *  * http://www.apache.org/licenses/LICENSE-2.0
- *  *  *
- *  *  * Unless required by applicable law or agreed to in writing, software
- *  *  * distributed under the License is distributed on an "AS IS" BASIS,
- *  *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *  * See the License for the specific language governing permissions and
- *  *  * limitations under the License.
- *  *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
+
 package com.cloudera.altus.sdk.samples;
 
 import com.cloudera.altus.AltusServiceException;
 import com.cloudera.altus.dataeng.api.DataengClient;
-import com.cloudera.altus.dataeng.model.ClusterStatus;
 import com.cloudera.altus.dataeng.model.CreateAWSClusterRequest;
-import com.cloudera.altus.dataeng.model.CreateAWSClusterRequest.AutomaticTerminationConditionEnum;
-import com.cloudera.altus.dataeng.model.CreateAWSClusterResponse;
-import com.cloudera.altus.dataeng.model.JobOrder;
 import com.cloudera.altus.dataeng.model.JobRequest;
 import com.cloudera.altus.dataeng.model.JobSummary;
 import com.cloudera.altus.dataeng.model.ListJobsRequest;
@@ -102,15 +95,15 @@ public class SparkAllInOneIntegration extends BaseIntegration {
 			jobs.add(job);
 
 			/*
-			Cluster will  terminate after successful completion of the job since EMPTY_JOB_QUEUE
+			Cluster will terminate after successful completion of the job since EMPTY_JOB_QUEUE
 			https://www.cloudera.com/documentation/altus/Shared/altus_dejob_jobs.html#unique_1104585979
 			*/
 			request.setJobs(jobs);
-			request.setAutomaticTerminationCondition(AutomaticTerminationConditionEnum.EMPTY_JOB_QUEUE);
-			CreateAWSClusterResponse response = client.createAWSCluster(request);
+			request.setAutomaticTerminationCondition("EMPTY_JOB_QUEUE");
+			client.createAWSCluster(request);
 
-			ClusterStatus finalClusterStatus = pollClusterStatus(client, clusterName);
-			if (ClusterStatus.CREATED.equals(finalClusterStatus)) {
+			String finalClusterStatus = pollClusterStatus(client, clusterName);
+			if ("CREATED".equals(finalClusterStatus)) {
 				LOG.info("Successfully creating cluster: " + clusterName);
 				String jobId = findJobId(client, jobName);
 				if (jobId != null) {
@@ -134,7 +127,7 @@ public class SparkAllInOneIntegration extends BaseIntegration {
 
 	private String findJobId(DataengClient client, String jobName) {
 		ListJobsRequest listJobsRequest = new ListJobsRequest();
-		listJobsRequest.setOrder(JobOrder.NEWEST_TO_OLDEST);
+		listJobsRequest.setOrder("NEWEST_TO_OLDEST");
 
 		List<JobSummary> jobSummaries = new ArrayList<>();
 		ListJobsResponse listJobsResponse = client.listJobs(listJobsRequest);

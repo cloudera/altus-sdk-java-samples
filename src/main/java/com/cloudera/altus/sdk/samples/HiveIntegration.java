@@ -1,27 +1,23 @@
 /*
+ * Copyright (c) 2018 Cloudera, Inc. All Rights Reserved.
  *
- *  *
- *  *  * Copyright (c) 2017 Cloudera, Inc. All Rights Reserved.
- *  *  *
- *  *  * Licensed under the Apache License, Version 2.0 (the "License");
- *  *  * you may not use this file except in compliance with the License.
- *  *  * You may obtain a copy of the License at
- *  *  *
- *  *  * http://www.apache.org/licenses/LICENSE-2.0
- *  *  *
- *  *  * Unless required by applicable law or agreed to in writing, software
- *  *  * distributed under the License is distributed on an "AS IS" BASIS,
- *  *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *  * See the License for the specific language governing permissions and
- *  *  * limitations under the License.
- *  *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
+
 package com.cloudera.altus.sdk.samples;
 
 import com.cloudera.altus.AltusServiceException;
 import com.cloudera.altus.dataeng.api.DataengClient;
-import com.cloudera.altus.dataeng.model.ClusterStatus;
 import com.cloudera.altus.dataeng.model.HiveJobRequest;
 import com.cloudera.altus.dataeng.model.JobRequest;
 import com.cloudera.altus.dataeng.model.SubmitJobsRequest;
@@ -44,13 +40,13 @@ public class HiveIntegration extends BaseIntegration {
 		DataengClient client = builder.createClient();
 
 		try {
-      ClusterStatus clusterCreationStatus = builder.createAWSCluster(client, clusterName, "HIVE_ON_SPARK");
+			String clusterCreationStatus = builder.createAWSCluster(client, clusterName, "HIVE_ON_SPARK");
 
 			/*
 			Valid values for Cluster status can be found at in the Altus documentation:
 			https://www.cloudera.com/documentation/altus/topics/altaws_declu_clusters.html#cluster_status
 			*/
-			if (ClusterStatus.CREATED.equals(clusterCreationStatus)) {
+			if ("CREATED".equals(clusterCreationStatus)) {
 				/*
 				In this scenario the cluster is already created when submitting the Job. However, you can also
 				submit the job without waiting for cluster creation. Job will be in queue until cluster is created.

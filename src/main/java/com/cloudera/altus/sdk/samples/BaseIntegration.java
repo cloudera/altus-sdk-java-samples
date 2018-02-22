@@ -1,22 +1,19 @@
 /*
+ * Copyright (c) 2018 Cloudera, Inc. All Rights Reserved.
  *
- *  *
- *  *  * Copyright (c) 2017 Cloudera, Inc. All Rights Reserved.
- *  *  *
- *  *  * Licensed under the Apache License, Version 2.0 (the "License");
- *  *  * you may not use this file except in compliance with the License.
- *  *  * You may obtain a copy of the License at
- *  *  *
- *  *  * http://www.apache.org/licenses/LICENSE-2.0
- *  *  *
- *  *  * Unless required by applicable law or agreed to in writing, software
- *  *  * distributed under the License is distributed on an "AS IS" BASIS,
- *  *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *  * See the License for the specific language governing permissions and
- *  *  * limitations under the License.
- *  *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
+
 package com.cloudera.altus.sdk.samples;
 
 import com.cloudera.altus.AltusClientException;
@@ -25,14 +22,12 @@ import com.cloudera.altus.client.AltusClientConfiguration;
 import com.cloudera.altus.client.AltusClientConfigurationBuilder;
 import com.cloudera.altus.dataeng.api.DataengClient;
 import com.cloudera.altus.dataeng.api.DataengClientBuilder;
-import com.cloudera.altus.dataeng.model.ClusterStatus;
 import com.cloudera.altus.dataeng.model.CreateAWSClusterRequest;
 import com.cloudera.altus.dataeng.model.CreateAWSClusterResponse;
 import com.cloudera.altus.dataeng.model.DeleteClusterRequest;
 import com.cloudera.altus.dataeng.model.DeleteClusterResponse;
 import com.cloudera.altus.dataeng.model.DescribeClusterRequest;
 import com.cloudera.altus.dataeng.model.DescribeJobRequest;
-import com.cloudera.altus.dataeng.model.JobStatus;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -75,7 +70,7 @@ abstract class BaseIntegration {
 		  You can also pass in the credential provider by specifying an AltusCredentialsProvider object
 		  in the withCredentials method.
 		  EX: DataengClientBuilder.defaultBuilder().withClientConfiguration(altusClientConfiguration)
-		  .withCredentials(basicAltusCredentialsProvider)*/
+		  .withCredentials(altusCredentialsProvider)*/
 
 			Wini ini = getIniFile();
 			/* Application name denotes who is creating the cluster functions. */
@@ -104,8 +99,7 @@ abstract class BaseIntegration {
 	 * @param clusterType			Type of the cluster to be created
 	 * @return ClusterStatus  Status of the cluster being created
 	 */
-	ClusterStatus createAWSCluster(DataengClient client, String clusterName,
-																 String clusterType) {
+	String createAWSCluster(DataengClient client, String clusterName, String clusterType) {
 		try {
 			Wini ini = getIniFile();
 
@@ -154,20 +148,19 @@ abstract class BaseIntegration {
 	 * @param clusterName		Cluster to poll
 	 * @return ClusterStatus	Final status of the cluster
 	 */
-	ClusterStatus pollClusterStatus(DataengClient client, String clusterName) {
+	String pollClusterStatus(DataengClient client, String clusterName) {
 
 	  /* Poll the cluster to determine if cluster was created successfully */
 		DescribeClusterRequest describeClusterRequest = new DescribeClusterRequest();
 		describeClusterRequest.setClusterName(clusterName);
-		ClusterStatus clusterStatus;
 
 		while (true) {
-			clusterStatus = client.describeCluster(describeClusterRequest).getCluster().getStatus();
-			if (ClusterStatus.CREATED.equals(clusterStatus)) {
+			String clusterStatus = client.describeCluster(describeClusterRequest).getCluster().getStatus();
+			if ("CREATED".equals(clusterStatus)) {
 				LOG.info("Successfully created AWS cluster " + clusterName);
 				return clusterStatus;
-			} else if (ClusterStatus.FAILED.equals(clusterStatus)
-					|| ClusterStatus.TERMINATING.equals(clusterStatus)) {
+			} else if ("FAILED".equals(clusterStatus)
+					|| "TERMINATING".equals(clusterStatus)) {
 				LOG.error("AWS cluster " + clusterName + " was unable to get created. "
 											+ " Cluster status is " + clusterStatus);
 				return clusterStatus;
@@ -193,7 +186,7 @@ abstract class BaseIntegration {
 
 		/* Throws an AltusServiceException (RuntimeException) on failure */
 		DeleteClusterResponse response = client.deleteCluster(deleteClusterRequest);
-		return response.getStatusCode();
+		return response.getHttpCode();
 	}
 
 	/**
@@ -211,20 +204,19 @@ abstract class BaseIntegration {
 	 * @param jobId		Job Id to poll
 	 * @return JobStatus	Final status of the job
 	 */
-	JobStatus pollJobStatus(DataengClient client, String jobId) {
+	String pollJobStatus(DataengClient client, String jobId) {
 
 	  /* Poll the job to determine if cluster was created successfully */
 		DescribeJobRequest jobRequest = new DescribeJobRequest();
 		jobRequest.setJobId(jobId);
-		JobStatus currentJobStatus;
 
 		while (true) {
-			currentJobStatus = client.describeJob(jobRequest).getJob().getStatus();
-			if (JobStatus.COMPLETED.equals(currentJobStatus)) {
+			String currentJobStatus = client.describeJob(jobRequest).getJob().getStatus();
+			if ("COMPLETED".equals(currentJobStatus)) {
 				LOG.info("Successfully completed job ");
 				return currentJobStatus;
-			} else if (JobStatus.FAILED.equals(currentJobStatus)
-					|| JobStatus.TERMINATING.equals(currentJobStatus)) {
+			} else if ("FAILED".equals(currentJobStatus)
+					|| "TERMINATING".equals(currentJobStatus)) {
 				LOG.error("Job " + jobId + currentJobStatus.toString());
 				return currentJobStatus;
 			} else {

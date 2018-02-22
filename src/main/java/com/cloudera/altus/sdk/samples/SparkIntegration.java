@@ -1,27 +1,23 @@
 /*
+ * Copyright (c) 2018 Cloudera, Inc. All Rights Reserved.
  *
- *  *
- *  *  * Copyright (c) 2017 Cloudera, Inc. All Rights Reserved.
- *  *  *
- *  *  * Licensed under the Apache License, Version 2.0 (the "License");
- *  *  * you may not use this file except in compliance with the License.
- *  *  * You may obtain a copy of the License at
- *  *  *
- *  *  * http://www.apache.org/licenses/LICENSE-2.0
- *  *  *
- *  *  * Unless required by applicable law or agreed to in writing, software
- *  *  * distributed under the License is distributed on an "AS IS" BASIS,
- *  *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *  * See the License for the specific language governing permissions and
- *  *  * limitations under the License.
- *  *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
+
 package com.cloudera.altus.sdk.samples;
 
 import com.cloudera.altus.AltusServiceException;
 import com.cloudera.altus.dataeng.api.DataengClient;
-import com.cloudera.altus.dataeng.model.ClusterStatus;
 import com.cloudera.altus.dataeng.model.JobRequest;
 import com.cloudera.altus.dataeng.model.SparkJobRequest;
 import com.cloudera.altus.dataeng.model.SubmitJobsRequest;
@@ -50,8 +46,8 @@ public class SparkIntegration extends BaseIntegration {
 			DataengClient client = builder.createClient();
 			String clusterName = "Sample-Spark2";
 
-			ClusterStatus clusterCreationStatus = builder.createAWSCluster(client, clusterName, "SPARK");
-			if (ClusterStatus.CREATED.equals(clusterCreationStatus)) {
+			String clusterCreationStatus = builder.createAWSCluster(client, clusterName, "SPARK");
+			if ("CREATED".equals(clusterCreationStatus)) {
 				builder.createJob(client, clusterName);
 				LOG.info("Successfully created cluster and submitted Spark job to it");
 			} else {
