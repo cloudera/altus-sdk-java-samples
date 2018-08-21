@@ -7,12 +7,12 @@ is based on the tutorials mentioned in the
 
 ## Prerequisites
 1) Must have a valid Altus account. Please refer to
-   [Getting Started as an Altus User](https://www.cloudera.com/documentation/altus/Shared/altus_usr_get_started.html).
+   [Getting Started in Altus](https://www.cloudera.com/documentation/altus/topics/alt_gettingstarted.html).
 2) Make sure you have a valid Altus Environment associated with your cloud
    provider per Altus requirements. These samples assume the use of an AWS
    environment. Please refer to [Altus Environment](https://www.cloudera.com/documentation/altus/topics/altaws_adm_environment.html).
 3) Make sure you have the Altus credentials to run the project. Please refer to
-   [Configure the Altus Client with the API Access Key](https://www.cloudera.com/documentation/altus/Shared/altus_usr_get_started.html#configure_client).
+   [Configure the Altus Client with the API Access Key](https://www.cloudera.com/documentation/altus/topics/alt_client_setup.html#configure_client).
    The Altus credential provider chain
    [`DefaultCredentialProviderChain.java`](https://github.com/cloudera/altus-sdk-java/blob/master/src/main/java/com/cloudera/altus/authentication/credentials/DefaultCredentialProviderChain.java)
    looks for credentials in this order:
