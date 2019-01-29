@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.cloudera.altus</groupId>
   <artifactId>altus-sdk-java-samplecode</artifactId>
-  <version>1.3.2</version>
+  <version>1.3.3</version>
   <name>altus-sdk-java-samplecode</name>
   <description>Sample examples to get started on Altus SDK (Java) development.</description>
   <properties>
