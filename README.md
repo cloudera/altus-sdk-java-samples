@@ -1,5 +1,15 @@
 # Cloudera Altus SDK for Java Samples
 
+:no_entry: *[Cloudera Altus has reached end of
+life](https://docs.cloudera.com/common/html/altus-eol.html),
+so this repository is no longer maintained.* :no_entry:
+
+*To work with [Cloudera Data Platform
+(CDP)](https://www.cloudera.com/products/cloudera-data-platform.html), use the
+[Cloudera CDP SDK for Java](https://github.com/cloudera/cdp-sdk-java) instead.*
+
+---
+
 This is a set of simple sample applications that demonstrates how to connect to
 Altus service to make basic requests using the Altus SDK. The sample code
 is based on the tutorials mentioned in the
